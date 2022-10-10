@@ -21,7 +21,8 @@ class Action:
         self.uniquify_variables() # TODO: uniquify variables in cost?
 
     def __repr__(self):
-        return "action_%s_%s" % (self.name, id(self))
+        name = "action_%s_%s" % (self.name, id(self))
+        return name.replace('-', '__')
 
     def get_object_str_repr(self):
         return "<Action %r at %#x>" % (self.name, id(self))
