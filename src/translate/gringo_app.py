@@ -5,15 +5,19 @@ import clingo
 from clingo.control import Control
 from clingox.program import Program, ProgramObserver, Remapping
 
+import pddl
+import timers
+
 import networkx as nx
 
 class ClingoApp(object):
-    def __init__(self, name, no_show=False, ground_guess=False, ground=False):
+    def __init__(self, name, no_show=False, ground_guess=False, ground=False, map_actions=dict()):
         self.program_name = name
         self.sub_doms = {}
         self.no_show = no_show
         self.ground_guess = ground_guess
         self.ground = ground
+        self.map_actions = map_actions
 
         self.relevant_atoms = []
         self.prg = Program()
@@ -23,26 +27,37 @@ class ClingoApp(object):
         ctl_insts.register_observer(ProgramObserver(self.prg))
         # read subdomains in #program insts.
         self._readSubDoms(ctl_insts,files)
-        list_atoms = []
-        atoms = 0
+
         if self.ground:
             for f in self.prg.facts:
-                fact = f.symbol
-                if not str(fact).startswith("temp__") and not str(fact).startswith("equals"):
-                    # count everything which is not temporary and build-int
-                    atoms = atoms + 1
-                    self.relevant_atoms.append(f)
+                name = f.symbol.name
+                if name.startswith("temp__") or name.startswith("equals"):
+                    pass
+                if name.startswith('action_'):
+                    # if it is an action predicate, then predicate is the object
+                    predicate = self.map_actions[str(name)]
+                else:
+                    # if it is not an action, than predicate is a simple string
+                    for rep in (('___xx___', '@'), ('__', '-')):
+                        name = name.replace(*rep)
+                    predicate = name
+                args = []
+                for a in f.symbol.arguments:
+                    args.append(a.name)
 
+                self.relevant_atoms.append(pddl.Atom(predicate, tuple(args)))
 
         print("Size of the model:", len(self.prg.facts))
-        print("Number of atoms (not actions): %d" % atoms)
+        print("Number of atoms (not actions): %d" % len(self.relevant_atoms))
 
     def _readSubDoms(self, ctl_insts, files):
         #ctl_insts = Control()
+        print("Loading theory files...")
         for f in files:
             ctl_insts.load(f)
-        ctl_insts.ground([("base", []), ("insts", [])])
-        print("Grounding done!")
+        print("Theory files loaded!")
+        with timers.timing("Computing model..."):
+            ctl_insts.ground([("base", []), ("insts", [])])
         for k in ctl_insts.symbolic_atoms:
             if(str(k.symbol).startswith('_dom_')):
                 var = str(k.symbol).split("(", 1)[0]
@@ -62,12 +77,12 @@ def _addToSubdom(sub_doms, var, value):
         sub_doms[var].append(value)
 
 
-def main(files):
+def main(files, map_actions):
     no_show = False
     ground_guess = True
     ground = True
 
-    clingo_app = ClingoApp(sys.argv[0], no_show, ground_guess, ground)
+    clingo_app = ClingoApp(sys.argv[0], no_show, ground_guess, ground, map_actions)
 
     clingo.clingo_main(clingo_app, files)
     return clingo_app.relevant_atoms

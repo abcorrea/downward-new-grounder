@@ -303,22 +303,23 @@ def translate_facts(prog, task):
             prog.add_fact(fact)
 
 def translate(task):
+    # create map between action objects and action predicates in datalog
+    map_actions = dict()
+    for action in task.actions:
+        map_actions[str(action)] = action
+
     # Note: The function requires that the task has been normalized.
     prog = PrologProgram()
     translate_facts(prog, task)
     for conditions, effect in normalize.build_exploration_rules(task):
         prog.add_rule(Rule(conditions, effect))
     prog.normalize()
+
     if options.remove_action_predicates:
         prog.remove_action_predicates()
     if options.use_direct_lp_encoding:
-        return prog
+        return prog, map_actions
     prog.split_rules()
-
-    # create map between action objects and action predicates in datalog
-    map_actions = dict()
-    for action in task.actions:
-        map_actions[str(action)] = action
 
     return prog, map_actions
 
