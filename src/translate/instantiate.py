@@ -108,6 +108,18 @@ def explore(task):
 
     with open("output.theory", 'w') as lp_file:
         prog.dump_sanitized(lp_file)
+        for p in task.predicates:
+            name = p.name
+            if name == '=':
+                continue
+            for rep in ((' ', ''), ('()', ''), ('-', '__'),
+                        ('p$', 'temp__'), ('@', '___xx___'),
+                        ('=', 'equals')):
+                name = name.replace(*rep)
+            print("#show %s/%d." % (name, len(p.arguments)), file=lp_file)
+        for name, action in map_actions.items():
+            print("#show %s/%d." % (name, len(action.parameters)), file=lp_file)
+        print("#show ___xx___goal__reachable/0.", file=lp_file)
 
     with timers.timing("Grounding with gringo..."):
         model = gringo_app.main([lp_file.name], map_actions)

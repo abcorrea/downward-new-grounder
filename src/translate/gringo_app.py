@@ -31,8 +31,6 @@ class ClingoApp(object):
         if self.ground:
             for f in self.prg.facts:
                 name = f.symbol.name
-                if name.startswith("temp__") or name.startswith("equals"):
-                    pass
                 if name.startswith('action_'):
                     # if it is an action predicate, then predicate is the object
                     predicate = self.map_actions[str(name)]
