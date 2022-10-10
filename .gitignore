@@ -1,5 +1,6 @@
 __pycache__/
 /output.sas
+/output.theory
 /sas_plan
 /sas_plan.*
 /builds/
@@ -7,3 +8,5 @@ __pycache__/
 /experiments/issue*/data/
 /misc/.tox/
 /misc/autodoc/downward-xmlrpc.secret
+/translate/output.sas
+/translate/output.theory
