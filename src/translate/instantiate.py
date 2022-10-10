@@ -93,7 +93,7 @@ def instantiate(task, model):
             inst_axiom = axiom.instantiate(variable_mapping, init_facts, fluent_facts)
             if inst_axiom:
                 instantiated_axioms.append(inst_axiom)
-        elif atom.predicate == "@goal-reachable":
+        elif atom.predicate == "__goal_reachable":
             relaxed_reachable = True
 
     instantiated_goal = instantiate_goal(task.goal, init_facts, fluent_facts)
@@ -112,9 +112,7 @@ def explore(task):
             name = p.name
             if name == '=':
                 continue
-            for rep in ((' ', ''), ('()', ''), ('-', '__'),
-                        ('p$', 'temp__'), ('@', '___xx___'),
-                        ('=', 'equals')):
+            for rep in ((' ', ''), ('()', ''), ('-', '__'), ('=', 'equals')):
                 name = name.replace(*rep)
             print("#show %s/%d." % (name, len(p.arguments)), file=lp_file)
         for name, action in map_actions.items():
@@ -127,6 +125,8 @@ def explore(task):
     #old_model = build_model.compute_model(prog)
 
     with timers.timing("Completing instantiation"):
+        import sys
+        sys.exit()
         return instantiate(task, model)
 
 

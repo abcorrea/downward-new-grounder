@@ -245,9 +245,7 @@ class Literal(Condition):
     def _sanitize_output(self):
         cond = "%s(%s)" % (self.predicate,
                               ", ".join(map(str, self.args)))
-        for rep in ((' ', ''), ('()', ''), ('-', '__'),
-                    ('?', 'Var_'), ('p$', 'temp__'), ('@', '___xx___'),
-                    ('=', 'equals')):
+        for rep in ((' ', ''), ('()', ''), ('-', '__'), ('?', 'Var_'), ('=', 'equals')):
             cond = cond.replace(*rep)
         return cond
     def __repr__(self):
