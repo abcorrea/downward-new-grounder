@@ -8,5 +8,5 @@ __pycache__/
 /experiments/issue*/data/
 /misc/.tox/
 /misc/autodoc/downward-xmlrpc.secret
-/translate/output.sas
-/translate/output.theory
+/src/translate/output.sas
+/src/translate/output.theory
