@@ -4,6 +4,7 @@
 from collections import defaultdict
 
 import build_model
+import gringo_app
 import pddl_to_prolog
 import pddl
 import timers
@@ -103,10 +104,39 @@ def instantiate(task, model):
 
 
 def explore(task):
-    prog = pddl_to_prolog.translate(task)
-    model = build_model.compute_model(prog)
+    prog, map_actions = pddl_to_prolog.translate(task)
+
+
+
+    with open("output.theory", 'w') as lp_file:
+        prog.dump_sanitized(lp_file)
+
+    with timers.timing("Grounding with gringo..."):
+        model = gringo_app.main([lp_file.name])
+
+    #old_model = build_model.compute_model(prog)
+
+    # We need to *invert* the sanitization applied to the logic program (done so gringo/lptop/BalancedGo
+    # work fine with out LPs).
+    postprocessed_model = []
+    for f in model:
+        name = f.symbol.name
+        if 'action_' in name:
+            # if it is an action predicate, then predicate is the object
+            predicate = map_actions[str(name)]
+        else:
+            # if it is not an action, than predicate is a simple string
+            for rep in (('___xx___', '@'), ('__', '-')):
+                name = name.replace(*rep)
+            predicate = name
+        args = []
+        for a in f.symbol.arguments:
+            args.append(a.name)
+        postprocessed_model.append(pddl.Atom(predicate, tuple(args)))
+
+
     with timers.timing("Completing instantiation"):
-        return instantiate(task, model)
+        return instantiate(task, postprocessed_model)
 
 
 if __name__ == "__main__":

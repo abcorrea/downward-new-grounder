@@ -240,8 +240,16 @@ class Literal(Condition):
     def __le__(self, other):
         return self.key <= other.key
     def __str__(self):
-        return "%s %s(%s)" % (self.__class__.__name__, self.predicate,
+        return "%s(%s)" % (self.predicate,
                               ", ".join(map(str, self.args)))
+    def _sanitize_output(self):
+        cond = "%s(%s)" % (self.predicate,
+                              ", ".join(map(str, self.args)))
+        for rep in ((' ', ''), ('()', ''), ('-', '__'),
+                    ('?', 'Var_'), ('p$', 'temp__'), ('@', '___xx___'),
+                    ('=', 'equals')):
+            cond = cond.replace(*rep)
+        return cond
     def __repr__(self):
         return '<%s>' % self
     def _dump(self):

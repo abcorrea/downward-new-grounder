@@ -21,6 +21,9 @@ class Action:
         self.uniquify_variables() # TODO: uniquify variables in cost?
 
     def __repr__(self):
+        return "action_%s_%s" % (self.name, id(self))
+
+    def get_object_str_repr(self):
         return "<Action %r at %#x>" % (self.name, id(self))
 
     def dump(self):
@@ -31,7 +34,7 @@ class Action:
         for eff in self.effects:
             eff.dump()
         print("Cost:")
-        if self.cost:
+        if(self.cost):
             self.cost.dump()
         else:
             print("  None")

@@ -50,6 +50,18 @@ def parse_args():
         dest="filter_unimportant_vars", action="store_false",
         help="keep variables that do not influence the goal in the causal graph")
     argparser.add_argument(
+        "--remove-action-predicates",
+        dest="remove_action_predicates", action="store_true",
+        help="remove action predicates from logic program")
+    argparser.add_argument(
+        "--htd",
+        dest="htd", action="store_true",
+        help="use hypertree decomposition to split logic program rules")
+    argparser.add_argument(
+        "--use-direct-lp-encoding",
+        dest="use_direct_lp_encoding", action="store_true",
+        help="use direct task encoding without split as logic programming for grounding step")
+    argparser.add_argument(
         "--dump-task", action="store_true",
         help="dump human-readable SAS+ representation of the task")
     argparser.add_argument(
