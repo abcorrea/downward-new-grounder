@@ -524,7 +524,6 @@ def pddl_to_sas(task):
         (relaxed_reachable, atoms, actions, goal_list, axioms,
          reachable_action_params) = instantiate.explore(task)
 
-    sys.exit()
     if not relaxed_reachable:
         return unsolvable_sas_task("No relaxed solution")
     elif goal_list is None:

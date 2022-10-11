@@ -3,6 +3,10 @@
 
 from collections import defaultdict
 
+from random import shuffle
+
+from subprocess import Popen, PIPE, STDOUT
+
 import build_model
 import gringo_app
 import pddl_to_prolog
@@ -73,8 +77,8 @@ def instantiate(task, model):
 
     fluent_facts = get_fluent_facts(task, model)
 
-    for f in sorted(fluent_facts):
-        print(f"FLUENT FACT: {f}")
+    #for f in sorted(fluent_facts):
+    #    print(f"FLUENT FACT: {f}")
 
     init_facts = set()
     init_assignments = {}
@@ -92,7 +96,7 @@ def instantiate(task, model):
     print("Model size: %d" % len(model))
     with timers.timing("Main loop...", block=True):
         iter = 0
-        for atom in sorted(model):
+        for atom in reversed(model):
             if isinstance(atom.predicate, pddl.Action):
                 iter +=1
                 action = atom.predicate
@@ -154,10 +158,33 @@ def explore(task):
             program_description += "#show %s/%d." % (name, len(p.arguments))
         for name, action in map_actions.items():
             program_description += "#show %s/%d." % (name, len(action.parameters))
+        sanitized_predicates_to_original["goal_reachable"] = "goal_reachable"
         program_description += "#show goal_reachable/0."
 
     with timers.timing("Computing model..."):
-        model = gringo_app.main(program_description, map_actions)
+        gringo = Popen(['gringo'], stdout=PIPE, stdin=PIPE, stderr=PIPE, text=True)
+        gringo_output = gringo.communicate(input=program_description)[0]
+
+    with timers.timing("Parsing Clingo model into our model..."):
+        model = []
+        for line in gringo_output.splitlines():
+            words = line.split()
+            if words[0]  == '4':
+                # This is a relevant ground atom
+                atom = words[2]
+                if '(' in atom:
+                    predicate = atom.split('(')[0]
+                    terms = atom.split('(', 1)[1].split(')')[0]
+                    args = terms.split(sep=',')
+                else:
+                    predicate = atom
+                    args = []
+                possible_action = map_actions.get(predicate)
+                if possible_action:
+                    model.append(pddl.Atom(possible_action, args))
+                else:
+                    predicate = sanitized_predicates_to_original[predicate]
+                    model.append(pddl.Atom(predicate, args))
 
     #old_model = build_model.compute_model(prog)
 
