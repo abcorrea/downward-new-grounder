@@ -16,7 +16,7 @@ class PrologProgram:
         self.objects = set()
         def predicate_name_generator():
             for count in itertools.count():
-                yield "__temp__%d" % count
+                yield "_temp_%d" % count
         self.new_name = predicate_name_generator()
     def add_fact(self, atom):
         self.facts.append(Fact(atom))
@@ -55,8 +55,8 @@ class PrologProgram:
     def remove_free_effect_variables(self):
         """Remove free effect variables like the variable Y in the rule
         p(X, Y) :- q(X). This is done by introducing a new predicate
-        __object, setting it true for all objects, and translating the above
-        rule to p(X, Y) :- q(X), __object(Y).
+        _object, setting it true for all objects, and translating the above
+        rule to p(X, Y) :- q(X), _object(Y).
         After calling this, no new objects should be introduced!"""
 
         # Note: This should never be necessary for typed domains.
@@ -69,17 +69,17 @@ class PrologProgram:
                 must_add_predicate = True
                 eff_vars -= cond_vars
                 for var in sorted(eff_vars):
-                    rule.add_condition(pddl.Atom("__object", [var]))
+                    rule.add_condition(pddl.Atom("_object", [var]))
         if must_add_predicate:
-            print("Unbound effect variables: Adding __object predicate.")
-            self.facts += [Fact(pddl.Atom("__object", [obj])) for obj in self.objects]
+            print("Unbound effect variables: Adding _object predicate.")
+            self.facts += [Fact(pddl.Atom("_object", [obj])) for obj in self.objects]
 
     def split_duplicate_arguments(self):
         """Make sure that no variable occurs twice within the same symbolic fact,
         like the variable X does in p(X, Y, X). This is done by renaming the second
         and following occurrences of the variable and adding equality conditions.
-        For example p(X, Y, X) is translated to p(X, Y, X__0) with the additional
-        condition =(X, X__0); the equality predicate must be appropriately instantiated
+        For example p(X, Y, X) is translated to p(X, Y, X_0) with the additional
+        condition =(X, X_0); the equality predicate must be appropriately instantiated
         somewhere else."""
         printed_message = False
         for rule in self.rules:
@@ -197,7 +197,7 @@ class PrologProgram:
         remaining_equivalent_rules = dict()
         equivalence = dict()
         for rule in rules:
-            if str(rule.effect).startswith("__temp__"):
+            if str(rule.effect).startswith("_temp_"):
                 '''Auxiliary variable'''
                 if (str(rule.conditions), str(rule.effect.args)) in remaining_equivalent_rules.keys():
                     equivalence[str(rule.effect.predicate)] = remaining_equivalent_rules[(str(rule.conditions), str(rule.effect.args))]
@@ -259,7 +259,7 @@ class Rule:
         for i, var_name in enumerate(atom.args):
             if var_name[0] == "?":
                 if var_name in used_variables:
-                    new_var_name = "%s__%d" % (var_name, len(new_conditions))
+                    new_var_name = "%s_%d" % (var_name, len(new_conditions))
                     atom = atom.replace_argument(i, new_var_name)
                     new_conditions.append(pddl.Atom("=", [var_name, new_var_name]))
                 else:
