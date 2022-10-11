@@ -149,26 +149,25 @@ def explore(task):
     fluent_predicates = get_fluent_predicates(task)
     sanitized_predicates_to_original = defaultdict()
 
-    with open("output.theory", 'w') as lp_file:
-        prog.dump_sanitized(lp_file)
+    program_description = prog.dump_sanitized()
 
-        # List of tuples (N, A) where N is the non-sanitized name of the predicate (as in the PDDL
-        # task) and A is the action associated to it (or None if there's no such action). This is
-        # used to parse the model back to the PDDL names.
-        name_order = []
-        for p in task.predicates:
-            name = p.name
-            if p.name not in fluent_predicates:
-                continue
-            name = sanitize_predicate_name(name)
-            sanitized_predicates_to_original[name] = p.name
-            print("#show %s/%d." % (name, len(p.arguments)), file=lp_file)
-        for name, action in map_actions.items():
-            print("#show %s/%d." % (name, len(action.parameters)), file=lp_file)
-        print("#show goal_reachable/0.", file=lp_file)
+    # List of tuples (N, A) where N is the non-sanitized name of the predicate (as in the PDDL
+    # task) and A is the action associated to it (or None if there's no such action). This is
+    # used to parse the model back to the PDDL names.
+    name_order = []
+    for p in task.predicates:
+        name = p.name
+        if p.name not in fluent_predicates:
+            continue
+        name = sanitize_predicate_name(name)
+        sanitized_predicates_to_original[name] = p.name
+        program_description += "#show %s/%d." % (name, len(p.arguments))
+    for name, action in map_actions.items():
+        program_description += "#show %s/%d." % (name, len(action.parameters))
+    program_description += "#show goal_reachable/0."
 
     with timers.timing("Computing model..."):
-        model = gringo_app.main([lp_file.name], map_actions)
+        model = gringo_app.main(program_description, map_actions)
 
     #old_model = build_model.compute_model(prog)
 

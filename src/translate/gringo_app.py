@@ -22,26 +22,13 @@ class ClingoApp(object):
         self.relevant_atoms = []
         self.prg = Program()
 
-    def main(self, ctl, files):
+    def main(self, program):
         ctl_insts = Control()
         ctl_insts.register_observer(ProgramObserver(self.prg))
-        # read subdomains in #program insts.
-        self._readSubDoms(ctl_insts,files)
-
+        ctl_insts.add("base", [], program)
+        ctl_insts.ground([("base", [])])
         print("Size of the model:", len(self.prg.facts))
 
-    def _readSubDoms(self, ctl_insts, files):
-        #ctl_insts = Control()
-        print("Loading theory files...")
-        for f in files:
-            ctl_insts.load(f)
-        print("Theory files loaded!")
-        ctl_insts.ground([("base", []), ("insts", [])])
-        for k in ctl_insts.symbolic_atoms:
-            if(str(k.symbol).startswith('_dom_')):
-                var = str(k.symbol).split("(", 1)[0]
-                atom = re.sub(r'^.*?\(', '', str(k.symbol))[:-1]
-                _addToSubdom(self.sub_doms, var, atom)
 
 def _addToSubdom(sub_doms, var, value):
     if var.startswith('_dom_'):
@@ -56,12 +43,12 @@ def _addToSubdom(sub_doms, var, value):
         sub_doms[var].append(value)
 
 
-def main(files, map_actions):
+def main(program, map_actions):
     no_show = False
     ground_guess = True
     ground = True
 
     clingo_app = ClingoApp(sys.argv[0], no_show, ground_guess, ground, map_actions)
+    clingo_app.main(program)
 
-    clingo.clingo_main(clingo_app, files)
     return clingo_app.prg.facts

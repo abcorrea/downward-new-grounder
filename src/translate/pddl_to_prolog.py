@@ -29,10 +29,12 @@ class PrologProgram:
         for rule in self.rules:
             print(getattr(rule, "type", "none"), rule, file=file)
     def dump_sanitized(self, file=None):
+        program = ""
         for fact in self.facts:
-            print(fact._sanitize_output(), file=file)
+            program += fact._sanitize_output()
         for rule in self.rules:
-            print(rule._sanitize_output(), file=file)
+            program += rule._sanitize_output()
+        return program
     def normalize(self):
         # Normalized prolog programs have the following properties:
         # 1. Each variable that occurs in the effect of a rule also occurs in its
