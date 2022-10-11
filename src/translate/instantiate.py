@@ -78,11 +78,14 @@ def transform_clingo_fact_into_atom(name, fact_arguments):
 def instantiate(task, fluent_predicates, sanitized_predicates_to_original, map_actions, model):
     relaxed_reachable = False
     fluent_facts = set()
+    other_facts = []
     for fact in model:
         fact_name = fact.symbol.name
+        args = fact.symbol.arguments
         if sanitized_predicates_to_original.get(fact_name) in fluent_predicates:
-            args = fact.symbol.arguments
             fluent_facts.add(transform_clingo_fact_into_atom(sanitized_predicates_to_original[fact_name], args))
+        else:
+            other_facts.append((fact_name, args))
     init_facts = set()
     init_assignments = {}
     for element in task.init:
@@ -96,13 +99,12 @@ def instantiate(task, fluent_predicates, sanitized_predicates_to_original, map_a
     instantiated_actions = []
     instantiated_axioms = []
     reachable_action_parameters = defaultdict(list)
-    for atom in model:
-        atom_name = atom.symbol.name
+    for atom_name, atom_args in other_facts:
         if atom_name in map_actions:
             action = map_actions[atom_name]
             parameters = action.parameters
             inst_parameters = []
-            for a in atom.symbol.arguments:
+            for a in atom_args:
                 inst_parameters.append(a.name)
             # Note: It's important that we use the action object
             # itself as the key in reachable_action_parameters (rather
