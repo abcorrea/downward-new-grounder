@@ -14,10 +14,6 @@ def sanitize_predicate_name(name):
         name = name.replace(*rep)
     return name
 
-def desanizite_predicate_name(name):
-    name = name.replace('__', '-')
-    return name
-
 def get_fluent_predicates(task):
     fluent_predicates = set()
     for action in task.actions:
@@ -69,23 +65,17 @@ def instantiate_goal(goal, init_facts, fluent_facts):
         return None
     return result
 
-def transform_clingo_fact_into_atom(name, fact_arguments):
-    args = []
-    for a in fact_arguments:
-        args.append(a.name)
+def transform_clingo_fact_into_atom(name, args):
     return pddl.Atom(name, args)
 
-def instantiate(task, fluent_predicates, sanitized_predicates_to_original, map_actions, model):
+def instantiate(task, model):
     relaxed_reachable = False
-    fluent_facts = set()
-    other_facts = []
-    for fact in model:
-        fact_name = fact.symbol.name
-        args = fact.symbol.arguments
-        if sanitized_predicates_to_original.get(fact_name) in fluent_predicates:
-            fluent_facts.add(transform_clingo_fact_into_atom(sanitized_predicates_to_original[fact_name], args))
-        else:
-            other_facts.append((fact_name, args))
+
+    fluent_facts = get_fluent_facts(task, model)
+
+    for f in sorted(fluent_facts):
+        print(f"FLUENT FACT: {f}")
+
     init_facts = set()
     init_assignments = {}
     for element in task.init:
@@ -99,42 +89,41 @@ def instantiate(task, fluent_predicates, sanitized_predicates_to_original, map_a
     instantiated_actions = []
     instantiated_axioms = []
     reachable_action_parameters = defaultdict(list)
-    for atom_name, atom_args in other_facts:
-        if atom_name in map_actions:
-            action = map_actions[atom_name]
-            parameters = action.parameters
-            inst_parameters = []
-            for a in atom_args:
-                inst_parameters.append(a.name)
-            # Note: It's important that we use the action object
-            # itself as the key in reachable_action_parameters (rather
-            # than action.name) since we can have multiple different
-            # actions with the same name after normalization, and we
-            # want to distinguish their instantiations.
-            reachable_action_parameters[action].append(inst_parameters)
-            variable_mapping = {par.name: arg
-                                for par, arg in zip(parameters, inst_parameters)}
-            inst_action = action.instantiate(
-                variable_mapping, init_facts, init_assignments,
-                fluent_facts, type_to_objects,
-                task.use_min_cost_metric)
-            if inst_action:
-                instantiated_actions.append(inst_action)
-        # elif isinstance(atom.predicate, pddl.Axiom):
-        #     raise NotImplementedError
-        #     # TODO Implement axioms
-        #     axiom = atom.predicate
-        #     variable_mapping = {par.name: arg
-        #                         for par, arg in zip(axiom.parameters, atom.args)}
-        #     inst_axiom = axiom.instantiate(variable_mapping, init_facts, fluent_facts)
-        #     if inst_axiom:
-        #         instantiated_axioms.append(inst_axiom)
-        elif atom_name == "goal_reachable":
-            relaxed_reachable = True
+    print("Model size: %d" % len(model))
+    with timers.timing("Main loop...", block=True):
+        iter = 0
+        for atom in sorted(model):
+            if isinstance(atom.predicate, pddl.Action):
+                iter +=1
+                action = atom.predicate
+                parameters = action.parameters
+                inst_parameters = atom.args[:len(parameters)]
+                # Note: It's important that we use the action object
+                # itself as the key in reachable_action_parameters (rather
+                # than action.name) since we can have multiple different
+                # actions with the same name after normalization, and we
+                # want to distinguish their instantiations.
+                reachable_action_parameters[action].append(inst_parameters)
+                variable_mapping = {par.name: arg
+                                    for par, arg in zip(parameters, atom.args)}
+                inst_action = action.instantiate(
+                    variable_mapping, init_facts, init_assignments,
+                    fluent_facts, type_to_objects,
+                    task.use_min_cost_metric)
+                if inst_action:
+                    instantiated_actions.append(inst_action)
+            # elif isinstance(atom.predicate, pddl.Axiom):
+            #     axiom = atom.predicate
+            #     variable_mapping = {par.name: arg
+            #                         for par, arg in zip(axiom.parameters, atom.args)}
+            #     inst_axiom = axiom.instantiate(variable_mapping, init_facts, fluent_facts)
+            #     if inst_axiom:
+            #         instantiated_axioms.append(inst_axiom)
+            elif atom.predicate == "goal_reachable":
+                relaxed_reachable = True
+        print("iterations: %d" % iter)
 
     instantiated_goal = instantiate_goal(task.goal, init_facts, fluent_facts)
-
-    import sys
 
     return (relaxed_reachable, fluent_facts,
             instantiated_actions, instantiated_goal,
@@ -144,27 +133,28 @@ def explore(task):
     if len(task.axioms) > 0:
         raise NotImplementedError
 
-    prog, map_actions = pddl_to_prolog.translate(task)
+    with timers.timing("Creating program...", block=True):
+        prog, map_actions = pddl_to_prolog.translate(task)
 
-    fluent_predicates = get_fluent_predicates(task)
-    sanitized_predicates_to_original = defaultdict()
+        fluent_predicates = get_fluent_predicates(task)
+        sanitized_predicates_to_original = defaultdict()
 
-    program_description = prog.dump_sanitized()
+        program_description = prog.dump_sanitized()
 
-    # List of tuples (N, A) where N is the non-sanitized name of the predicate (as in the PDDL
-    # task) and A is the action associated to it (or None if there's no such action). This is
-    # used to parse the model back to the PDDL names.
-    name_order = []
-    for p in task.predicates:
-        name = p.name
-        if p.name not in fluent_predicates:
-            continue
-        name = sanitize_predicate_name(name)
-        sanitized_predicates_to_original[name] = p.name
-        program_description += "#show %s/%d." % (name, len(p.arguments))
-    for name, action in map_actions.items():
-        program_description += "#show %s/%d." % (name, len(action.parameters))
-    program_description += "#show goal_reachable/0."
+        # List of tuples (N, A) where N is the non-sanitized name of the predicate (as in the PDDL
+        # task) and A is the action associated to it (or None if there's no such action). This is
+        # used to parse the model back to the PDDL names.
+        name_order = []
+        for p in task.predicates:
+            name = p.name
+            if p.name not in fluent_predicates:
+                continue
+            name = sanitize_predicate_name(name)
+            sanitized_predicates_to_original[name] = p.name
+            program_description += "#show %s/%d." % (name, len(p.arguments))
+        for name, action in map_actions.items():
+            program_description += "#show %s/%d." % (name, len(action.parameters))
+        program_description += "#show goal_reachable/0."
 
     with timers.timing("Computing model..."):
         model = gringo_app.main(program_description, map_actions)
@@ -172,8 +162,7 @@ def explore(task):
     #old_model = build_model.compute_model(prog)
 
     with timers.timing("Completing instantiation"):
-        return instantiate(task, fluent_predicates, sanitized_predicates_to_original, map_actions, model)
-
+        return instantiate(task, model)
 
 if __name__ == "__main__":
     import pddl_parser
