@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env pypy3
 # -*- coding: utf-8 -*-
 
 from collections import defaultdict

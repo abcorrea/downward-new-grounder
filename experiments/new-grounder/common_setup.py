@@ -14,8 +14,6 @@ from downward.reports.absolute import AbsoluteReport
 from downward.reports.compare import ComparativeReport
 from downward.reports.scatter import ScatterPlotReport
 
-from relativescatter import RelativeScatterPlotReport
-
 
 def parse_args():
     ARGPARSER.add_argument(
@@ -43,7 +41,7 @@ DEFAULT_OPTIMAL_SUITE = [
     'openstacks-strips', 'organic-synthesis-opt18-strips',
     'organic-synthesis-split-opt18-strips', 'parcprinter-08-strips',
     'parcprinter-opt11-strips', 'parking-opt11-strips',
-    'parking-opt14-strips', 'pathways-noneg', 'pegsol-08-strips',
+    'parking-opt14-strips', 'pathways', 'pegsol-08-strips',
     'pegsol-opt11-strips', 'petri-net-alignment-opt18-strips',
     'pipesworld-notankage', 'pipesworld-tankage', 'psr-small', 'rovers',
     'satellite', 'scanalyzer-08-strips', 'scanalyzer-opt11-strips',
@@ -75,7 +73,7 @@ DEFAULT_SATISFICING_SUITE = [
     'organic-synthesis-sat18-strips',
     'organic-synthesis-split-sat18-strips', 'parcprinter-08-strips',
     'parcprinter-sat11-strips', 'parking-sat11-strips',
-    'parking-sat14-strips', 'pathways', 'pathways-noneg',
+    'parking-sat14-strips', 'pathways',
     'pegsol-08-strips', 'pegsol-sat11-strips', 'philosophers',
     'pipesworld-notankage', 'pipesworld-tankage', 'psr-large',
     'psr-middle', 'psr-small', 'rovers', 'satellite',
@@ -126,12 +124,12 @@ def get_repo_base():
     """Get base directory of the repository, as an absolute path.
 
     Search upwards in the directory tree from the main script until a
-    directory with a subdirectory named ".hg" is found.
+    directory with a subdirectory named ".git" is found.
 
     Abort if the repo base cannot be found."""
     path = os.path.abspath(get_script_dir())
     while os.path.dirname(path) != path:
-        if os.path.exists(os.path.join(path, ".hg")):
+        if os.path.exists(os.path.join(path, ".git")):
             return path
         path = os.path.dirname(path)
     sys.exit("repo base could not be found")
@@ -212,22 +210,22 @@ class IssueExperiment(FastDownwardExperiment):
         "run_dir",
         ]
 
-    def __init__(self, revisions=None, configs=None, path=None, **kwargs):
+    def __init__(self, revisions_and_configs=None, path=None, **kwargs):
         """
 
-        You can either specify both *revisions* and *configs* or none
-        of them. If they are omitted, you will need to call
-        exp.add_algorithm() manually.
+        If given, *revisions_and_configs* must be a non-empty list of
+        pairs (tuple of size 2) of revisions and configs, with the
+        meaning to run all configs on all revisions.
 
-        If *revisions* is given, it must be a non-empty list of
-        revision identifiers, which specify which planner versions to
-        use in the experiment. The same versions are used for
-        translator, preprocessor and search. ::
+        The first element of the pair, revisions, must be a non-empty
+        list of revision identifiers, which specify which planner
+        versions to use in the experiment. The same versions are used
+        for translator, preprocessor and search. ::
 
             IssueExperiment(revisions=["issue123", "4b3d581643"], ...)
 
-        If *configs* is given, it must be a non-empty list of
-        IssueConfig objects. ::
+        The second element of the pair, configs, must be a non-empty
+        list of IssueConfig objects. ::
 
             IssueExperiment(..., configs=[
                 IssueConfig("ff", ["--search", "eager_greedy(ff())"]),
@@ -251,22 +249,23 @@ class IssueExperiment(FastDownwardExperiment):
 
         FastDownwardExperiment.__init__(self, path=path, **kwargs)
 
-        if (revisions and not configs) or (not revisions and configs):
-            raise ValueError(
-                "please provide either both or none of revisions and configs")
+        revs = set()
+        confs = set()
+        for revisions, configs in revisions_and_configs:
+            for rev in revisions:
+                revs.add(rev)
+                for config in configs:
+                    confs.add(config.nick)
+                    self.add_algorithm(
+                        get_algo_nick(rev, config.nick),
+                        get_repo_base(),
+                        rev,
+                        config.component_options,
+                        build_options=config.build_options,
+                        driver_options=config.driver_options)
 
-        for rev in revisions:
-            for config in configs:
-                self.add_algorithm(
-                    get_algo_nick(rev, config.nick),
-                    get_repo_base(),
-                    rev,
-                    config.component_options,
-                    build_options=config.build_options,
-                    driver_options=config.driver_options)
-
-        self._revisions = revisions
-        self._configs = configs
+        self._revisions = list(revs)
+        self._config_nicks = list(confs)
 
     @classmethod
     def _is_portfolio(cls, config_nick):
@@ -303,7 +302,7 @@ class IssueExperiment(FastDownwardExperiment):
         self.add_step(
             'publish-absolute-report', subprocess.call, ['publish', outfile])
 
-    def add_comparison_table_step(self, **kwargs):
+    def add_comparison_table_step(self, name="make-comparison-tables", revisions=[], **kwargs):
         """Add a step that makes pairwise revision comparisons.
 
         Create comparative reports for all pairs of Fast Downward
@@ -319,12 +318,13 @@ class IssueExperiment(FastDownwardExperiment):
 
         """
         kwargs.setdefault("attributes", self.DEFAULT_TABLE_ATTRIBUTES)
+        if not revisions:
+            revisions = self._revisions
 
         def make_comparison_tables():
-            for rev1, rev2 in itertools.combinations(self._revisions, 2):
+            for rev1, rev2 in itertools.combinations(revisions, 2):
                 compared_configs = []
-                for config in self._configs:
-                    config_nick = config.nick
+                for config_nick in self._config_nicks:
                     compared_configs.append(
                         ("%s-%s" % (rev1, config_nick),
                          "%s-%s" % (rev2, config_nick),
@@ -337,17 +337,17 @@ class IssueExperiment(FastDownwardExperiment):
                 report(self.eval_dir, outfile)
 
         def publish_comparison_tables():
-            for rev1, rev2 in itertools.combinations(self._revisions, 2):
+            for rev1, rev2 in itertools.combinations(revisions, 2):
                 outfile = os.path.join(
                     self.eval_dir,
                     "%s-%s-%s-compare.html" % (self.name, rev1, rev2))
                 subprocess.call(["publish", outfile])
 
-        self.add_step("make-comparison-tables", make_comparison_tables)
+        self.add_step(name, make_comparison_tables)
         self.add_step(
-            "publish-comparison-tables", publish_comparison_tables)
+            f"publish-{name}", publish_comparison_tables)
 
-    def add_scatter_plot_step(self, relative=False, attributes=None):
+    def add_scatter_plot_step(self, relative=False, attributes=None, additional=[]):
         """Add step creating (relative) scatter plots for all revision pairs.
 
         Create a scatter plot for each combination of attribute,
@@ -360,34 +360,37 @@ class IssueExperiment(FastDownwardExperiment):
 
         """
         if relative:
-            report_class = RelativeScatterPlotReport
             scatter_dir = os.path.join(self.eval_dir, "scatter-relative")
             step_name = "make-relative-scatter-plots"
         else:
-            report_class = ScatterPlotReport
             scatter_dir = os.path.join(self.eval_dir, "scatter-absolute")
             step_name = "make-absolute-scatter-plots"
         if attributes is None:
             attributes = self.DEFAULT_SCATTER_PLOT_ATTRIBUTES
 
-        def make_scatter_plot(config_nick, rev1, rev2, attribute):
+        def make_scatter_plot(config_nick, rev1, rev2, attribute, config_nick2=None):
             name = "-".join([self.name, rev1, rev2, attribute, config_nick])
+            if config_nick2 is not None:
+                name += "-" + config_nick2
             print("Make scatter plot for", name)
             algo1 = get_algo_nick(rev1, config_nick)
-            algo2 = get_algo_nick(rev2, config_nick)
-            report = report_class(
+            algo2 = get_algo_nick(rev2, config_nick if config_nick2 is None else config_nick2)
+            report = ScatterPlotReport(
                 filter_algorithm=[algo1, algo2],
                 attributes=[attribute],
+                relative=relative,
                 get_category=lambda run1, run2: run1["domain"])
             report(
                 self.eval_dir,
                 os.path.join(scatter_dir, rev1 + "-" + rev2, name))
 
         def make_scatter_plots():
-            for config in self._configs:
+            for config_nick in self._config_nicks:
                 for rev1, rev2 in itertools.combinations(self._revisions, 2):
                     for attribute in self.get_supported_attributes(
-                            config.nick, attributes):
-                        make_scatter_plot(config.nick, rev1, rev2, attribute)
+                            config_nick, attributes):
+                        make_scatter_plot(config_nick, rev1, rev2, attribute)
+            for nick1, nick2, rev1, rev2, attribute in additional:
+                make_scatter_plot(nick1, rev1, rev2, attribute, config_nick2=nick2)
 
         self.add_step(step_name, make_scatter_plots)

@@ -6,6 +6,7 @@ __pycache__/
 /builds/
 /experiments/issue*/.venv/
 /experiments/issue*/data/
+/experiments/new-grounder/data/
 /misc/.tox/
 /misc/autodoc/downward-xmlrpc.secret
 /src/translate/output.sas
