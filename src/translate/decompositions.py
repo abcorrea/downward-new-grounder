@@ -71,7 +71,6 @@ class Hypertree:
 def delete_previous_htd_files():
     delete_files(".htd")
 
-
 def delete_files(extension):
     cwd = os.getcwd()
     files = os.listdir(cwd)
@@ -222,5 +221,8 @@ def split_into_hypertree(rule, name_generator):
         root_rule = new_rules[-1]
         #print("Changing effect of %s" % str(root_rule), " to %s" % rule.effect)
         root_rule.effect = rule.effect
+
+    delete_files(".htd")
+    delete_files(".ast")
 
     return new_rules

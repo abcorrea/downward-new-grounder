@@ -63,45 +63,38 @@ def split_rule(rule, name_generator):
     components = get_connected_conditions(important_conditions)
 
     if len(components) == 1 and not trivial_conditions:
-        if options.htd:
-            decomposed_rules = decompositions.split_into_hypertree(rule, name_generator)
-            if options.only_output_htd_program:
-                return decomposed_rules
-            else:
-                split_rules = []
-                for r in decomposed_rules:
-                    if len(r.conditions) > 2:
-                        split_rules += split_into_binary_rules(r, name_generator)
-                    else:
-                        r.type = get_rule_type(r)
-                        split_rules.append(r)
-                return split_rules
+        decomposed_rules = decompositions.split_into_hypertree(rule, name_generator)
+        if True:
+            # TODO maybe we only need this?
+            return decomposed_rules
         else:
-            return split_into_binary_rules(rule, name_generator)
-
+            split_rules = []
+            for r in decomposed_rules:
+                if len(r.conditions) > 2:
+                    split_rules += split_into_binary_rules(r, name_generator)
+                else:
+                    r.type = get_rule_type(r)
+                    split_rules.append(r)
+            return split_rules
 
     projected_rules = [project_rule(rule, conditions, name_generator)
                        for conditions in components]
 
     result = []
-    if options.htd:
-        for proj_rule in projected_rules:
-            if len(proj_rule.conditions) == 1:
-                proj_rule.type = get_rule_type(proj_rule)
-                result += [proj_rule]
-                non_normalized_rules += [proj_rule]
-                continue
-            new_proj_rules = decompositions.split_into_hypertree(proj_rule, name_generator)
-            non_normalized_rules += new_proj_rules
-            for r in new_proj_rules:
-                if len(r.conditions) > 2:
-                    result += split_into_binary_rules(r, name_generator)
-                else:
-                    r.type = get_rule_type(r)
-                    result += [r]
-    else:
-        for proj_rule in projected_rules:
-            result += split_into_binary_rules(proj_rule, name_generator)
+    for proj_rule in projected_rules:
+        if len(proj_rule.conditions) == 1:
+            proj_rule.type = get_rule_type(proj_rule)
+            result += [proj_rule]
+            non_normalized_rules += [proj_rule]
+            continue
+        new_proj_rules = decompositions.split_into_hypertree(proj_rule, name_generator)
+        non_normalized_rules += new_proj_rules
+        for r in new_proj_rules:
+            if len(r.conditions) > 2:
+                result += split_into_binary_rules(r, name_generator)
+            else:
+                r.type = get_rule_type(r)
+                result += [r]
 
     conditions = ([proj_rule.effect for proj_rule in projected_rules] +
                   trivial_conditions)

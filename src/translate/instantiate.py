@@ -1,14 +1,12 @@
 #! /usr/bin/env python3
-
-
+import uuid
 from collections import defaultdict
 
 from random import shuffle
 
 from subprocess import Popen, PIPE, STDOUT
 
-import build_model
-import gringo_app
+import decompositions
 import pddl_to_prolog
 import pddl
 import timers
@@ -148,7 +146,6 @@ def explore(task):
         # List of tuples (N, A) where N is the non-sanitized name of the predicate (as in the PDDL
         # task) and A is the action associated to it (or None if there's no such action). This is
         # used to parse the model back to the PDDL names.
-        name_order = []
         for p in task.predicates:
             name = p.name
             if p.name not in fluent_predicates:
@@ -160,8 +157,12 @@ def explore(task):
             program_description += "#show %s/%d." % (name, len(action.parameters))
         sanitized_predicates_to_original["goal_reachable"] = "goal_reachable"
         program_description += "#show goal_reachable/0."
+        print(sanitized_predicates_to_original)
 
     with timers.timing("Computing model..."):
+        with open("output.theory", "w") as file:
+             print(f"Saving Datalog program to {file.name}")
+             file.write(program_description)
         gringo = Popen(['gringo'], stdout=PIPE, stdin=PIPE, stderr=PIPE, text=True)
         gringo_output = gringo.communicate(input=program_description)[0]
 
@@ -176,7 +177,10 @@ def explore(task):
                     predicate = atom.split('(')[0]
                     terms = atom.split('(', 1)[1].split(')')[0]
                     args = terms.split(sep=',')
+                    for idx, name in enumerate(args):
+                        args[idx] = name.replace("__", "-")
                 else:
+                    print(line)
                     predicate = atom
                     args = []
                 possible_action = map_actions.get(predicate)
