@@ -157,7 +157,6 @@ def explore(task):
             program_description += "#show %s/%d." % (name, len(action.parameters))
         sanitized_predicates_to_original["goal_reachable"] = "goal_reachable"
         program_description += "#show goal_reachable/0."
-        print(sanitized_predicates_to_original)
 
     with timers.timing("Computing model..."):
         with open("output.theory", "w") as file:
@@ -180,7 +179,6 @@ def explore(task):
                     for idx, name in enumerate(args):
                         args[idx] = name.replace("__", "-")
                 else:
-                    print(line)
                     predicate = atom
                     args = []
                 possible_action = map_actions.get(predicate)

@@ -296,3 +296,19 @@ class NegatedAtom(Literal):
     def negate(self):
         return Atom(self.predicate, self.args)
     positive = negate
+
+class InequalityAtom(NegatedAtom):
+    def __init__(self, args):
+        assert len(args) == 2
+        self.predicate = "="
+        self.args = tuple(args)
+        self.hash = hash((self.__class__, self.predicate, self.args))
+
+    def __str__(self):
+        return "%s" % ("!= ".join(map(str, self.args)))
+
+    def _sanitize_output(self):
+        cond = str(self)
+        for rep in ((' ', ''), ('()', ''), ('-', '__'), ('?', 'Var_')):
+            cond = cond.replace(*rep)
+        return cond

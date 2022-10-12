@@ -388,6 +388,8 @@ def condition_to_rule_body(parameters, condition):
             assert isinstance(part, pddl.Literal), "Condition not normalized: %r" % part
             if not part.negated:
                 result.append(part)
+            elif part.predicate == '=':
+                result.append(pddl.InequalityAtom(part.args))
     return result
 
 if __name__ == "__main__":
