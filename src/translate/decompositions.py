@@ -92,7 +92,7 @@ def generate_hypertree(rule):
     counter = 0
     f = open("rule-hypertree.ast", 'w')
     for idx, p in enumerate(rule.conditions):
-        if len(p.args) == 0:
+        if len(p.args) == 0 or isinstance(p, pddl.InequalityAtom):
             continue
         atom_name = "{}-{}".format(p.predicate, str(counter))
         if p.predicate == '=':

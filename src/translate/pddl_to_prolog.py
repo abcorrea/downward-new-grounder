@@ -309,6 +309,8 @@ def translate(task):
     map_actions = dict()
     for action in task.actions:
         map_actions[str(action)] = action
+    for axiom in task.axioms:
+        map_actions[str(axiom)] = axiom
 
     # Note: The function requires that the task has been normalized.
     prog = PrologProgram()

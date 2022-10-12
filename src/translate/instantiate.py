@@ -114,13 +114,13 @@ def instantiate(task, model):
                     task.use_min_cost_metric)
                 if inst_action:
                     instantiated_actions.append(inst_action)
-            # elif isinstance(atom.predicate, pddl.Axiom):
-            #     axiom = atom.predicate
-            #     variable_mapping = {par.name: arg
-            #                         for par, arg in zip(axiom.parameters, atom.args)}
-            #     inst_axiom = axiom.instantiate(variable_mapping, init_facts, fluent_facts)
-            #     if inst_axiom:
-            #         instantiated_axioms.append(inst_axiom)
+            elif isinstance(atom.predicate, pddl.Axiom):
+                 axiom = atom.predicate
+                 variable_mapping = {par.name: arg
+                                     for par, arg in zip(axiom.parameters, atom.args)}
+                 inst_axiom = axiom.instantiate(variable_mapping, init_facts, fluent_facts)
+                 if inst_axiom:
+                     instantiated_axioms.append(inst_axiom)
             elif atom.predicate == "goal_reachable":
                 relaxed_reachable = True
         print("iterations: %d" % iter)
@@ -132,9 +132,6 @@ def instantiate(task, model):
             sorted(instantiated_axioms), reachable_action_parameters)
 
 def explore(task):
-    if len(task.axioms) > 0:
-        raise NotImplementedError
-
     with timers.timing("Creating program...", block=True):
         prog, map_actions = pddl_to_prolog.translate(task)
 
