@@ -210,7 +210,7 @@ def split_into_hypertree(rule, name_generator):
         else:
             pos, _ = map_predicate_to_edge[node.cover[0]] # single element in the cover
             condition = rule.conditions[pos]
-            not_joined_relations.remove(condition)
+            not_joined_relations.discard(condition)
             associated_new_relation[node] = condition
 
 
