@@ -12,7 +12,7 @@ import pddl
 import timers
 
 def sanitize_predicate_name(name):
-    for rep in ((' ', ''), ('()', ''), ('-', '__'), ('=', 'equals')):
+    for rep in ((' ', ''), ('()', ''), ('__', '_DUMMYCHAR_'), ('-', '___'), ('=', 'equals')):
         name = name.replace(*rep)
     return name
 
@@ -175,6 +175,7 @@ def explore(task):
                     args = terms.split(sep=',')
                     for idx, name in enumerate(args):
                         args[idx] = name.replace("__", "-")
+                        args[idx] = args[idx].replace("_DUMMYCHAR_", "__")
                 else:
                     predicate = atom
                     args = []

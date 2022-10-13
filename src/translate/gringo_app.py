@@ -36,7 +36,7 @@ class ClingoApp(object):
                     predicate = v
                 else:
                     # if it is not an action, than predicate is a simple string
-                    predicate = name.replace('__', '-')
+                    predicate = name.replace('___', '-')
                 args = (a.name for a in f.symbol.arguments)
                 self.relevant_atoms.append(pddl.Atom(predicate, args))
             print("Size of the model:", len(self.prg.facts))
