@@ -57,7 +57,7 @@ exp.add_step('build', exp.build)
 exp.add_step('start', exp.start_runs)
 exp.add_fetcher(name='fetch')
 
-exp.add_absolute_report_step(attributes=['translator_*', 'error'])
-exp.add_comparison_table_step(attributes=['translator_*', 'error'])
+exp.add_absolute_report_step(attributes=['translator_*', 'error', 'run_dir'])
+exp.add_comparison_table_step(attributes=['translator_*', 'error', 'run_dir'])
 
 exp.run_steps()
