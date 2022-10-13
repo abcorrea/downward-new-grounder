@@ -174,7 +174,7 @@ def explore(task):
                     terms = atom.split('(', 1)[1].split(')')[0]
                     args = terms.split(sep=',')
                     for idx, name in enumerate(args):
-                        args[idx] = name.replace("__", "-")
+                        args[idx] = name.replace("___", "-")
                         args[idx] = args[idx].replace("_DUMMYCHAR_", "__")
                 else:
                     predicate = atom
