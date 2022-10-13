@@ -23,7 +23,7 @@ REVISIONS_AND_CONFIGS = [
     ),
     (
         ["new-grounder-v1"],
-        [IssueConfig('translate', [], driver_options=['--translate'])],
+        [IssueConfig('translate', ['--translate-options', '--use-direct-lp-encoding'], driver_options=['--translate'])],
     )
 ]
 
