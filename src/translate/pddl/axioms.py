@@ -14,7 +14,10 @@ class Axiom:
         self.uniquify_variables()
 
     def __repr__(self):
-        return "axiom_%s_%s" % (self.name, self.__hash__())
+        name = "axiom_%s_%s" % (self.name, self.__hash__())
+        for rep in (('__', '_DOUBLEUNDERSCORE_'), ('-', '_HYPHEN_')):
+            name = name.replace(*rep)
+        return name
 
     def dump(self):
         args = map(str, self.parameters[:self.num_external_parameters])

@@ -158,9 +158,9 @@ def explore(task):
         program_description += "#show goal_reachable/0."
 
     with timers.timing("Computing model..."):
-        #with open("output.theory", "w") as file:
-        #     print(f"Saving Datalog program to {file.name}")
-        #     file.write(program_description)
+        with open("output.theory", "w") as file:
+             print(f"Saving Datalog program to {file.name}")
+             file.write(program_description)
         gringo = Popen(['gringo'], stdout=PIPE, stdin=PIPE, stderr=PIPE, text=True)
         gringo_output = gringo.communicate(input=program_description)[0]
 
