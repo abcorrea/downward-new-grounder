@@ -245,7 +245,7 @@ class Literal(Condition):
     def _sanitize_output(self):
         cond = "%s(%s)" % (self.predicate,
                               ", ".join(map(str, self.args)))
-        for rep in ((' ', ''), ('()', ''), ('__', '_DUMMYCHAR_'), ('-', '___'), ('?', 'Var_'), ('=', 'equals')):
+        for rep in ((' ', ''), ('()', ''), ('__', '_DOUBLEUNDERSCORE_'), ('-', '_HYPHEN_'), ('?', 'Var_'), ('=', 'equals')):
             cond = cond.replace(*rep)
         return cond
     def __repr__(self):
@@ -309,6 +309,6 @@ class InequalityAtom(NegatedAtom):
 
     def _sanitize_output(self):
         cond = str(self)
-        for rep in ((' ', ''), ('()', ''), ('__', '_DUMMYCHAR_'), ('-', '___'), ('?', 'Var_')):
+        for rep in ((' ', ''), ('()', ''), ('__', '_DOUBLEUNDERSCORE_'), ('-', '_HYPHEN_'), ('?', 'Var_')):
             cond = cond.replace(*rep)
         return cond

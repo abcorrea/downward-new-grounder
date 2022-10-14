@@ -22,7 +22,9 @@ class Action:
 
     def __repr__(self):
         name = "action_%s_%s" % (self.name, id(self))
-        return name.replace('-', '___')
+        for rep in (('__', '_DOUBLEUNDERSCORE_'), ('-', '_HYPHEN_')):
+            name = name.replace(*rep)
+        return name
 
     def get_object_str_repr(self):
         return "<Action %r at %#x>" % (self.name, id(self))

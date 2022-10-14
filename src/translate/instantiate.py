@@ -12,7 +12,7 @@ import timers
 import random
 
 def sanitize_predicate_name(name):
-    for rep in ((' ', ''), ('()', ''), ('__', '_DUMMYCHAR_'), ('-', '___'), ('=', 'equals')):
+    for rep in ((' ', ''), ('()', ''), ('__', '_DOUBLEUNDERSCORE_'), ('-', '_HYPHEN_'), ('=', 'equals')):
         name = name.replace(*rep)
     return name
 
@@ -176,8 +176,8 @@ def explore(task):
                     terms = atom.split('(', 1)[1].split(')')[0]
                     args = terms.split(sep=',')
                     for idx, name in enumerate(args):
-                        args[idx] = name.replace("___", "-")
-                        args[idx] = args[idx].replace("_DUMMYCHAR_", "__")
+                        args[idx] = name.replace("_HYPHEN_", "-")
+                        args[idx] = args[idx].replace("_DOUBLEUNDERSCORE_", "__")
                 else:
                     predicate = atom
                     args = []
