@@ -2,14 +2,15 @@
 import uuid
 from collections import defaultdict
 
-from random import shuffle
-
 from subprocess import Popen, PIPE, STDOUT
 
 import decompositions
 import pddl_to_prolog
 import pddl
 import timers
+
+import random
+import sys
 
 def sanitize_predicate_name(name):
     for rep in ((' ', ''), ('()', ''), ('__', '_DUMMYCHAR_'), ('-', '___'), ('=', 'equals')):
@@ -92,9 +93,12 @@ def instantiate(task, model):
     instantiated_axioms = []
     reachable_action_parameters = defaultdict(list)
     print("Model size: %d" % len(model))
+    seed = random.randrange(sys.maxsize)
+    print("Seed was:", seed)
     with timers.timing("Main loop...", block=True):
         iter = 0
-        for atom in reversed(model):
+        random.Random(seed).shuffle(model)
+        for atom in model:
             if isinstance(atom.predicate, pddl.Action):
                 iter +=1
                 action = atom.predicate
