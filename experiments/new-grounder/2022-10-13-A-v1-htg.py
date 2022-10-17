@@ -80,7 +80,7 @@ ENVIRONMENT = BaselSlurmEnvironment(
 )
 
 if common_setup.is_test_run():
-    SUITE = IssueExperiment.DEFAULT_TEST_SUITE
+    SUITE = ['genome-edit-distance:d-1-2.pddl']
     ENVIRONMENT = LocalEnvironment(processes=4)
 
 exp = IssueExperiment(
