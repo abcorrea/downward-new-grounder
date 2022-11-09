@@ -4,7 +4,6 @@
 import sys
 import itertools
 
-import gringo_app
 import pddl
 import timers
 from functools import reduce

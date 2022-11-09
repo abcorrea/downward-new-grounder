@@ -10,6 +10,7 @@ import pddl
 import timers
 
 import random
+import sys
 
 def sanitize_predicate_name(name):
     for rep in ((' ', ''), ('()', ''), ('__', '_DOUBLEUNDERSCORE_'), ('-', '_HYPHEN_'), ('=', 'equals')):
@@ -72,11 +73,7 @@ def transform_clingo_fact_into_atom(name, args):
 
 def instantiate(task, model):
     relaxed_reachable = False
-
     fluent_facts = get_fluent_facts(task, model)
-
-    #for f in sorted(fluent_facts):
-    #    print(f"FLUENT FACT: {f}")
 
     init_facts = set()
     init_assignments = {}
@@ -91,11 +88,10 @@ def instantiate(task, model):
     instantiated_actions = []
     instantiated_axioms = []
     reachable_action_parameters = defaultdict(list)
-    print("Model size: %d" % len(model))
-    print("Seed was:", options.random_seed)
+
+    #random.Random(options.random_seed).shuffle(model)
+    iter = 0
     with timers.timing("Main loop...", block=True):
-        iter = 0
-        random.Random(options.random_seed).shuffle(model)
         for atom in model:
             if isinstance(atom.predicate, pddl.Action):
                 iter +=1
@@ -127,6 +123,7 @@ def instantiate(task, model):
                 relaxed_reachable = True
         print("iterations: %d" % iter)
 
+    #sys.exit()
     instantiated_goal = instantiate_goal(task.goal, init_facts, fluent_facts)
 
     return (relaxed_reachable, fluent_facts,

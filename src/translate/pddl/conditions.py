@@ -240,7 +240,7 @@ class Literal(Condition):
     def __le__(self, other):
         return self.key <= other.key
     def __str__(self):
-        return "Atom %s(%s)" % (self.predicate,
+        return "%s %s(%s)" % (self.__class__.__name__, self.predicate,
                               ", ".join(map(str, self.args)))
     def output(self):
         return "%s(%s)" % (self.predicate,
