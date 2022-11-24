@@ -1,6 +1,8 @@
 __pycache__/
 /output.sas
 /output.theory
+/output.model
+/output-with-actions.theory
 /sas_plan
 /sas_plan.*
 /builds/

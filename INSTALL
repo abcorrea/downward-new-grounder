@@ -1,0 +1,13 @@
+To use the grounder, you need to first install
+
+1) Pypy3
+
+2) gringo (see https://potassco.org/)
+
+3) the asp-grounding-planning repo (https://github.com/abcorrea/asp-grounding-planning)
+   - follow the instructions there to set up the environment variables
+
+4) add an environment variable $COUNT_GROUND_ACTIONS_BIN_PATH pointing to the
+   script "count-ground-actions.py" in the repository of step (2)
+
+To build Fast Downward, follow the instructions at https://www.fast-downward.org/

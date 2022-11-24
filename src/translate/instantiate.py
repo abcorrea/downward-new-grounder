@@ -5,6 +5,7 @@ from collections import defaultdict
 from subprocess import Popen, PIPE
 
 import options
+import os
 import pddl_to_prolog
 import pddl
 import timers
@@ -130,9 +131,16 @@ def instantiate(task, model):
             instantiated_actions, instantiated_goal,
             sorted(instantiated_axioms), reachable_action_parameters)
 
+def find_lpopt():
+    if os.environ.get('LPOPT_BIN_PATH') is not None:
+        return os.environ.get('LPOPT_BIN_PATH')
+    else:
+        print("You need to set an environment variable $LPOPT_BIN_PATH as the path to the binary file of lpopt.")
+        sys.exit(-1)
+
 def explore(task):
     with timers.timing("Creating program...", block=True):
-        prog, map_actions = pddl_to_prolog.translate(task)
+        prog, map_actions = pddl_to_prolog.translate(task, True)
 
         fluent_predicates = get_fluent_predicates(task)
         sanitized_predicates_to_original = defaultdict()
@@ -148,26 +156,69 @@ def explore(task):
                 continue
             name = sanitize_predicate_name(name)
             sanitized_predicates_to_original[name] = p.name
-            program_description += "#show %s/%d." % (name, len(p.arguments))
-        for name, action in map_actions.items():
-            program_description += "#show %s/%d." % (name, len(action.parameters))
+            #program_description += "#show %s/%d." % (name, len(p.arguments))
+        #for name, action in map_actions.items():
+        #    program_description += "#show %s/%d." % (name, len(action.parameters))
         sanitized_predicates_to_original["goal_reachable"] = "goal_reachable"
-        program_description += "#show goal_reachable/0."
+        #program_description += "#show goal_reachable/0."
 
     with timers.timing("Computing model..."):
-        with open("output.theory", "w") as file:
+        theory_output = "output.theory"
+        with open(theory_output, "w") as file:
              print(f"Saving Datalog program to {file.name}")
              file.write(program_description)
-        gringo = Popen(['gringo'], stdout=PIPE, stdin=PIPE, stderr=PIPE, text=True)
-        gringo_output = gringo.communicate(input=program_description)[0]
+
+        lpopt = find_lpopt()
+        command = [lpopt, "-f", theory_output]
+        lpopt_command = Popen(command, stdout=PIPE, stdin=PIPE, stderr=PIPE, text=True)
+        lpopt_problem = lpopt_command.communicate()[0]
+        print(lpopt_problem, file=open('split.lp', 'w'))
+
+        model_file_name = 'output.model'
+        with open(model_file_name, 'w') as gringo_model_file:
+            gringo = Popen(['gringo', '--text'], stdout=PIPE, stdin=PIPE, stderr=PIPE, text=True)
+            gringo_output = gringo.communicate(input=lpopt_problem)[0]
+            print(gringo_output, file=gringo_model_file)
+
+        prog_with_actions, _ = pddl_to_prolog.translate(task, False)
+        theory_with_actions = "output-with-actions.theory"
+        with open(theory_with_actions, 'w') as f:
+            print(prog_with_actions.dump_sanitized(), file=f)
+
+        count_ground_actions = os.environ.get('COUNT_GROUND_ACTIONS_BIN_PATH')
+        if count_ground_actions is None:
+            print("Environment variable $COUNT_GROUND_ACTIONS_BIN_PATH not defined.")
+        newground = Popen(['./count-ground-actions.py',
+                           '-m', model_file_name, '-t', theory_with_actions, '-e', '-o',
+                           '--counter-path', 'LPGRND_IO_BIN_PATH'],
+                          stdout=PIPE, stdin=PIPE, stderr=PIPE, text=True)
+        newground_output = newground.communicate()[0]
+        print(f"Return code: {newground.returncode}")
+        if newground.returncode != 0:
+            print("Error in counter")
+            sys.exit(1)
 
     with timers.timing("Parsing Clingo model into our model..."):
         model = []
         for line in gringo_output.splitlines():
-            words = line.split()
-            if words[0]  == '4':
+            atom = line[:-1] # Remove '.'
+            if '(' in atom:
+                predicate = atom.split('(')[0]
+                terms = atom.split('(', 1)[1].split(')')[0]
+                args = terms.split(sep=',')
+                for idx, name in enumerate(args):
+                    args[idx] = name.replace("_HYPHEN_", "-")
+                    args[idx] = args[idx].replace("_DOUBLEUNDERSCORE_", "__")
+            else:
+                predicate = atom
+                args = []
+            if sanitized_predicates_to_original.get(predicate):
+                predicate = sanitized_predicates_to_original[predicate]
+                model.append(pddl.Atom(predicate, args))
+        for line in newground_output.splitlines():
+            if line[0] != '%':
                 # This is a relevant ground atom
-                atom = words[2]
+                atom = line
                 if '(' in atom:
                     predicate = atom.split('(')[0]
                     terms = atom.split('(', 1)[1].split(')')[0]
@@ -179,11 +230,8 @@ def explore(task):
                     predicate = atom
                     args = []
                 possible_action = map_actions.get(predicate)
-                if possible_action:
-                    model.append(pddl.Atom(possible_action, args))
-                else:
-                    predicate = sanitized_predicates_to_original[predicate]
-                    model.append(pddl.Atom(predicate, args))
+                assert(possible_action)
+                model.append(pddl.Atom(possible_action, args))
 
     #old_model = build_model.compute_model(prog)
 

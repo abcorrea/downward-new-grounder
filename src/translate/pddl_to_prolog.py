@@ -127,7 +127,7 @@ class PrologProgram:
         action_rules = dict()
         for r in self.rules:
             # Capture action rules and do not add them to the new set of rules
-            rule_name = str(r.effect)
+            rule_name = r.effect.output()
             if rule_name.startswith("action_"):
                 action_rules[rule_name] = r
             else:
@@ -136,16 +136,14 @@ class PrologProgram:
         final_rules = []
         for r in non_action_rules:
             if len(r.conditions) == 1:
-                condition_name = str(r.conditions[0])
+                condition_name = r.conditions[0].output()
                 if condition_name in action_rules.keys():
                     new_action_rule = copy.deepcopy(action_rules[condition_name])
                     new_action_rule.effect = r.effect
                     # TODO If we use lifted costs, this should be done before
-                    new_action_rule.weight = 1
                     final_rules.append(new_action_rule)
                 else:
                     # TODO If we use lifted costs, this should be done before
-                    r.weight = 0
                     final_rules.append(r)
             else:
                 final_rules.append(r)
@@ -246,7 +244,7 @@ class Fact:
     def __str__(self):
         return "%s." % self.atom
     def _sanitize_output(self):
-        return "%s." % self.atom._sanitize_output()
+        return "%s.\n" % self.atom._sanitize_output()
 
 class Rule:
     def __init__(self, conditions, effect):
@@ -287,7 +285,7 @@ class Rule:
         cond_str = ",".join([x._sanitize_output() for x in self.conditions])
         cond_str = cond_str.replace(' ','')
         cond_str = cond_str.replace('()','')
-        return "%s :- %s." % (self.effect._sanitize_output(), cond_str)
+        return "%s :- %s.\n" % (self.effect._sanitize_output(), cond_str)
 
 
 def translate_typed_object(prog, obj, type_dict):
@@ -304,7 +302,7 @@ def translate_facts(prog, task):
         if isinstance(fact, pddl.Atom):
             prog.add_fact(fact)
 
-def translate(task):
+def translate(task, remove_action_predicates=False):
     # create map between action objects and action predicates in datalog
     map_actions = dict()
     for action in task.actions:
@@ -319,7 +317,7 @@ def translate(task):
         prog.add_rule(Rule(conditions, effect))
     prog.normalize()
 
-    if options.remove_action_predicates:
+    if remove_action_predicates:
         prog.remove_action_predicates()
     if options.use_direct_lp_encoding:
         return prog, map_actions
