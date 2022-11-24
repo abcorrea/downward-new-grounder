@@ -195,6 +195,7 @@ def explore(task):
         newground_output = newground.communicate()[0]
         print(f"Return code: {newground.returncode}")
         if newground.returncode != 0:
+            print(newground_output)
             print("Error in counter")
             sys.exit(1)
 

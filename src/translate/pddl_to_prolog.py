@@ -86,7 +86,7 @@ class PrologProgram:
         printed_message = False
         for rule in self.rules:
             if rule.rename_duplicate_variables() and not printed_message:
-                print("Duplicate arguments: Adding equality conditions.", file=sys.stderr)
+                #print("Duplicate arguments: Adding equality conditions.", file=sys.stderr)
                 printed_message = True
 
     def convert_trivial_rules(self):
@@ -310,6 +310,11 @@ def translate(task, remove_action_predicates=False):
     for axiom in task.axioms:
         map_actions[str(axiom)] = axiom
 
+    # if we don't remove the action predicates, then it is the direct encoding
+    # so we set the flag to add things such as inequalities
+    #options.use_direct_lp_encoding = (not remove_action_predicates)
+    #print(options.use_direct_lp_encoding)
+
     # Note: The function requires that the task has been normalized.
     prog = PrologProgram()
     translate_facts(prog, task)
@@ -319,9 +324,6 @@ def translate(task, remove_action_predicates=False):
 
     if remove_action_predicates:
         prog.remove_action_predicates()
-    if options.use_direct_lp_encoding:
-        return prog, map_actions
-    prog.split_rules()
 
     return prog, map_actions
 
