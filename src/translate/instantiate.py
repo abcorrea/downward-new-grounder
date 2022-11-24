@@ -188,7 +188,7 @@ def explore(task):
         count_ground_actions = os.environ.get('COUNT_GROUND_ACTIONS_BIN_PATH')
         if count_ground_actions is None:
             print("Environment variable $COUNT_GROUND_ACTIONS_BIN_PATH not defined.")
-        newground = Popen(['./count-ground-actions.py',
+        newground = Popen([count_ground_actions,
                            '-m', model_file_name, '-t', theory_with_actions, '-e', '-o',
                            '--counter-path', 'LPGRND_IO_BIN_PATH'],
                           stdout=PIPE, stdin=PIPE, stderr=PIPE, text=True)
