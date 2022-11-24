@@ -25,7 +25,7 @@ REVISIONS_AND_CONFIGS = [
                                      '3872M'])],
     ),
     (
-        ["new-grounder-v1"],
+        ["new-grounder-v1-lama"],
         [IssueConfig('lama',
                      ['--translate-options', '--use-direct-lp-encoding'],
                      driver_options=['--alias', 'lama-first',
