@@ -316,6 +316,7 @@ def translate(task, remove_action_predicates=False):
     #print(options.use_direct_lp_encoding)
 
     # Note: The function requires that the task has been normalized.
+    options.use_direct_lp_encoding = not remove_action_predicates
     prog = PrologProgram()
     translate_facts(prog, task)
     for conditions, effect in normalize.build_exploration_rules(task):
