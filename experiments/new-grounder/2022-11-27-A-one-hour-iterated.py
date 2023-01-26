@@ -114,7 +114,7 @@ def combine_larger_domains(run):
     return run
 
 
-exp.add_absolute_report_step(attributes=['translator_*']+exp.DEFAULT_TABLE_ATTRIBUTES,
+exp.add_absolute_report_step(attributes=['translator_*']+exp.DEFAULT_TABLE_ATTRIBUTES+['planner_wall_clock_time'],
                              filter=[combine_larger_domains])
 
 exp.add_comparison_table_step(attributes=['translator_*']+exp.DEFAULT_TABLE_ATTRIBUTES)
