@@ -13,6 +13,8 @@ from downward.reports.compare import ComparativeReport
 import common_setup
 from common_setup import IssueConfig, IssueExperiment
 
+from cactus import CactusPlotReport
+
 DIR = os.path.dirname(os.path.abspath(__file__))
 SCRIPT_NAME = os.path.splitext(os.path.basename(__file__))[0]
 BENCHMARKS_DIR = os.environ["HTG_BENCHMARKS_FLATTENED"]
@@ -105,7 +107,34 @@ exp.add_step('build', exp.build)
 exp.add_step('start', exp.start_runs)
 exp.add_fetcher(name='fetch')
 
-exp.add_absolute_report_step(attributes=['translator_*']+exp.DEFAULT_TABLE_ATTRIBUTES)
+
+def combine_larger_domains(run):
+    if 'childsnack-contents-parsize' in run['domain']:
+        run['problem'] = '{}-{}'.format(run['domain'], run['problem'])
+        run['domain'] = 'childsnacks-large'
+        return run
+    if 'visitall-multidimensional' in run['domain']:
+        run['problem'] = '{}-{}'.format(run['domain'], run['problem'])
+        run['domain'] = 'visitall-multidimensional'
+        return run
+    if 'genome-edit-distance' in run['domain']:
+        run['problem'] = '{}-{}'.format(run['domain'], run['problem'])
+        run['domain'] = 'genome-edit-distance'
+        return run
+    if 'organic-synthesis-' in run['domain']:
+        run['problem'] = '{}-{}'.format(run['domain'], run['problem'])
+        run['domain'] = 'organic-synthesis'
+        return run
+    return run
+
+
+exp.add_absolute_report_step(attributes=['translator_*']+exp.DEFAULT_TABLE_ATTRIBUTES,
+                             filter=[combine_larger_domains])
 exp.add_comparison_table_step(attributes=['translator_*']+exp.DEFAULT_TABLE_ATTRIBUTES)
+
+exp.add_report(CactusPlotReport(filter_algorithm=['old-grounder-v1-lama',
+                                                  'new-grounder-v1-lama-lama']),
+               name="cactus")
+
 
 exp.run_steps()
