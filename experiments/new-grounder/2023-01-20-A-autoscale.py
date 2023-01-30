@@ -19,11 +19,14 @@ BENCHMARKS_DIR = os.environ["AUTOSCALE_BENCHMARKS_SAT"]
 REVISIONS_AND_CONFIGS = [
     (
         ["old-grounder-v1"],
-        [IssueConfig('translate', [], driver_options=['--translate'])],
+        [IssueConfig('translate', [], driver_options=['--translate',
+                                                      '--overall-memory-limit', '8G'])],
     ),
     (
         ["new-grounder-clingo"],
-        [IssueConfig('translate', ['--translate-options', '--use-direct-lp-encoding'], driver_options=['--translate'])],
+        [IssueConfig('translate', ['--translate-options', '--use-direct-lp-encoding'],
+                     driver_options=['--translate',
+                                     '--overall-memory-limit', '8G'])],
     )
 ]
 
@@ -71,7 +74,9 @@ SUITE = ["agricola",
          "zenotravel"]
 
 ENVIRONMENT = BaselSlurmEnvironment(
-    partition="infai_1",
+    partition="infai_2",
+    memory_per_cpu="6GB",
+    cpus_per_task=2,
     export=[],
     # paths obtained via:
     # module purge
